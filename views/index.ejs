@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chat App</title>
+    <link rel="stylesheet" href="/style.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/socket.io/socket.io.js"></script>
+  </head>
+  <body class="bg-gray-100">
+    <div class="flex justify-center items-center min-h-screen">
+      <section class="w-[800px] max-w-[90%] bg-white shadow-lg rounded-lg">
+        <!-- Header Section -->
+        <div class="flex items-center bg-gray-200 text-white p-4 rounded-t-lg">
+          <img
+            src="/chat-logo.png"
+            alt="Logo"
+            class="w-12 h-12 rounded-full mr-4"
+          />
+          <h1 class="text-2xl font-bold text-gray-700">Chat App</h1>
+        </div>
+
+        <div class="messagearea p-6 space-y-4">
+          <!-- messages will be appended here -->
+        </div>
+
+        <div class="mt-6 p-4">
+          <!-- text-area -->
+          <textarea
+            id="textarea"
+            cols="30"
+            rows="2"
+            placeholder="Write a message.."
+            class="w-full p-3 border resize-none outline-none rounded-lg"
+          ></textarea>
+        </div>
+      </section>
+    </div>
+    <script>
+      // connect to socket.io
+      const socket = io();
+
+      // setting username
+      let name;
+
+      //text-area
+      let textarea = document.querySelector('#textarea');
+
+      //message-area
+      let messagearea = document.querySelector('.messagearea');
+
+      do {
+        name = prompt("Please Enter Your Name:");
+      } while (!name); // until user provides a name
+
+      textarea.addEventListener('keyup', (e) => { // getting event---> e
+        if (e.key === 'Enter' && e.target.value.trim() !== '') { // if key is enter and message is not empty
+          sendMessage(e.target.value); // getting user msg value and passing to sendMessage function
+          e.target.value = ''; // clear the textarea after sending the message
+        }
+      });
+
+      // creating sendMessage function
+      function sendMessage(message) { // receiving msg
+        let msg = {
+          user: name, // setting the user name coming from the user
+          message: message // sending message which is coming from the user
+        };
+        // append msg
+        appendMessage(msg, 'outgoing'); // passing msg and setting type
+        scrollToBottom();
+
+        //send to server
+        socket.emit('message',msg)
+      }
+
+      // creating function for append
+      function appendMessage(msg, type) {
+        let mainDiv = document.createElement('div'); // creating a div for incoming or outgoing msg dynamically
+        let className = type; // assign the className based on the message type (incoming or outgoing)
+        mainDiv.classList.add(className, 'message'); // adding specified class
+
+        // set inner HTML with dynamic user name and message
+        let markup = `
+          <h4 class="font-semibold">${msg.user}</h4>
+          <p>${msg.message}</p>
+        `;
+        mainDiv.innerHTML = markup;
+
+        // assign background color based on message type
+        if (type === 'outgoing') {
+          mainDiv.classList.add('bg-blue-500', 'text-white', 'p-4', 'rounded-lg', 'shadow-sm', 'max-w-[50%]', 'mr-auto');
+        } else {
+          mainDiv.classList.add('bg-gray-200', 'text-gray-800', 'p-4', 'rounded-lg', 'shadow-sm', 'max-w-[50%]', 'ml-auto');
+        }
+
+        // append the new message div to the message area
+        messagearea.appendChild(mainDiv);
+      }
+
+      // reciving the messages
+      socket.on('message', (msg)=>{// client code which runs in the browser
+        appendMessage(msg,'incoming') // passing the data
+        scrollToBottom()
+      })
+
+      //scroll to bottom fnc
+      function scrollToBottom(){
+        messagearea.scrollTop = messagearea.scrollHeight
+      }
+    </script>
+  </body>
+</html>
